@@ -59,13 +59,9 @@ func (h *udpHandler) handleWrite(p *udpPacket) error {
 	//TODO++ dont use go-routines, switch to pollable
 	//  array of listeners where all listeners are
 	//  sweeped periodically, removing the idle ones
-	const maxConns = 100
+
 	if !exists {
-		if h.udpConns.len() <= maxConns {
-			go h.handleRead(p, conn)
-		} else {
-			h.Debugf("exceeded max udp connections (%d)", maxConns)
-		}
+		go h.handleRead(p, conn)
 	}
 	_, err = conn.Write(p.Payload)
 	if err != nil {
@@ -76,7 +72,7 @@ func (h *udpHandler) handleWrite(p *udpPacket) error {
 
 func (h *udpHandler) handleRead(p *udpPacket, conn *udpConn) {
 	//ensure connection is cleaned up
-	defer h.udpConns.remove(conn.id)
+	defer func () {h.udpConns.remove(conn.id); conn.Close()} ()
 	const maxMTU = 9012
 	buff := make([]byte, maxMTU)
 	for {
