@@ -128,6 +128,7 @@ func (u *udpListener) runOutbound(ctx context.Context) error {
 		p := udpPacket{}
 		if err := uc.decode(&p); err == io.EOF {
 			//outbound ssh disconnected, get new connection...
+			u.setUDPChanNull()
 			continue
 		} else if err != nil {
 			return u.Errorf("decode error: %w", err)
@@ -180,10 +181,14 @@ func (u *udpListener) getUDPChan(ctx context.Context) (*udpChannel, error) {
 	return o, nil
 }
 
-func (u *udpListener) unsetUDPChan(sshConn ssh.Conn) {
-	sshConn.Wait()
-	u.Debugf("lost channel")
+func (u *udpListener) setUDPChanNull() {
 	u.outboundMut.Lock()
 	u.outbound = nil
 	u.outboundMut.Unlock()
+}
+
+func (u *udpListener) unsetUDPChan(sshConn ssh.Conn) {
+	sshConn.Wait()
+	u.Debugf("lost channel")
+	u.setUDPChanNull()
 }
